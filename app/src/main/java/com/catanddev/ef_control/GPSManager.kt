@@ -1,18 +1,19 @@
 package com.catanddev.ef_control
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Criteria
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Bundle
+import android.provider.Settings
 import android.util.Log
 import androidx.core.app.ActivityCompat
 import java.lang.Exception
-import java.util.jar.Manifest
-import javax.security.auth.callback.Callback
 
 public interface GPSCallback {
     public abstract fun onGPSUpdate(location : Location)
@@ -30,30 +31,34 @@ class GPSManager : android.location.GpsStatus.Listener {
 
 
 
-    fun GPSManager(context : Context) {
+    constructor(context : Context) {
         this.context = context
-        locationListener = LocationListener {
-            @Override
-            fun onLocationChanged(location: Location) {
-                /// Возможно нужна проверка на ненулевую переменную
-                gpsCallback?.onGPSUpdate(location)
+        locationListener = object : LocationListener {
+            override fun onLocationChanged(location: Location) {
+                gpsCallback.onGPSUpdate(location)
             }
+            override fun onStatusChanged(provider: String, status: Int, extras: Bundle) {}
+            override fun onProviderEnabled(provider: String) {}
+            override fun onProviderDisabled(provider: String) {}
+        }
 
-            @Override
-            fun onProviderEnabled(provider : String) {
+    }
 
-            }
-
-            @Override
-            fun onProviderDisabled(provider : String) {
-
-            }
-
-            @Override
-            fun onStatusChanged(provider : String, status: Int, extras : Bundle) {
-
+    fun showSettingsAlert() {
+        val alertDialog = AlertDialog.Builder(context)
+        alertDialog.setTitle("Error")
+        alertDialog.setMessage("GPS is not enabled. Do you want to go to settings menu?")
+        alertDialog.setPositiveButton("Settings") {
+                _, _ ->
+            run {
+                val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+                context.startActivity(intent)
             }
         }
+        alertDialog.setNegativeButton("Cancel") {
+            dialog, _ -> dialog.cancel()
+        }
+        alertDialog.show()
     }
 
     fun getGPSCallback() : GPSCallback? {
@@ -82,8 +87,10 @@ class GPSManager : android.location.GpsStatus.Listener {
         Log.i("GPS", "$mSattelites Used In Last Fix ( $mSattelites)")
     }
 
-    fun setGPSCallbck(callback : GPSCallback) {
-        gpsCallback = callback;
+    fun setGPSCallbck(callback: GPSCallback?) {
+        if (callback != null) {
+            gpsCallback = callback
+        };
     }
 
     fun startListening(context: Context) {
