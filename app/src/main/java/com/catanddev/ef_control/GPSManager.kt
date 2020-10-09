@@ -15,33 +15,29 @@ import android.util.Log
 import androidx.core.app.ActivityCompat
 import java.lang.Exception
 
-public interface GPSCallback {
-    public abstract fun onGPSUpdate(location : Location)
+interface GPSCallback {
+    fun onGPSUpdate(location : Location)
 }
 
 /// TODO: Заменть на GNSS Measurement
-class GPSManager : android.location.GpsStatus.Listener {
+class GPSManager(var context: Context) : android.location.GpsStatus.Listener {
 
     private val gpsMinTime : Long = 500
     private val gpsMinDistance = 0.0f
-    lateinit var context : Context
     private var locationManager : LocationManager? = null
     private var locationListener: LocationListener? = null
-    lateinit var gpsCallback: GPSCallback
+    var gpsCallback: GPSCallback? = null
 
 
-
-    constructor(context : Context) {
-        this.context = context
+    init {
         locationListener = object : LocationListener {
             override fun onLocationChanged(location: Location) {
-                gpsCallback.onGPSUpdate(location)
+                gpsCallback?.onGPSUpdate(location)
             }
             override fun onStatusChanged(provider: String, status: Int, extras: Bundle) {}
             override fun onProviderEnabled(provider: String) {}
             override fun onProviderDisabled(provider: String) {}
         }
-
     }
 
     fun showSettingsAlert() {
@@ -59,10 +55,6 @@ class GPSManager : android.location.GpsStatus.Listener {
             dialog, _ -> dialog.cancel()
         }
         alertDialog.show()
-    }
-
-    fun getGPSCallback() : GPSCallback? {
-        return gpsCallback;
     }
 
     override fun onGpsStatusChanged(p0: Int) {
@@ -85,12 +77,6 @@ class GPSManager : android.location.GpsStatus.Listener {
             mSattelites ++
         }
         Log.i("GPS", "$mSattelites Used In Last Fix ( $mSattelites)")
-    }
-
-    fun setGPSCallbck(callback: GPSCallback?) {
-        if (callback != null) {
-            gpsCallback = callback
-        };
     }
 
     fun startListening(context: Context) {

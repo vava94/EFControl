@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources><string name="gps_speed_txt">Скорость GPS</string>
+    <string name="propeller_rpm_txt">RPM винта</string>
+    <string name="remote_txt">Пульт</string>
+    <string name="voltage_txt">U акк.</string>
+    <string name="time_txt">Время</string>
+    <string name="t_bat_txt">T° акк.</string>
+    <string name="capcity_txt">Ёмкость</string>
+    <string name="status_txt">Статус</string>
+    <string name="disabled_txt">Отключено</string>
+    <string name="kmh_txt">км/ч</string>
+</resources>

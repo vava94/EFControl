@@ -1,3 +1,16 @@
 <resources>
-    <string name="app_name">EF-Control</string>
+    <string name="app_name" translatable="false">EF-Control</string>
+    <string name="gps_speed_txt">GPS speed</string>
+    <string name="propeller_rpm_txt">Propeller RPM</string>
+    <string name="remote_txt">Remote</string>
+    <string name="pwm_txt" translatable="false">PWM</string>
+    <string name="current_txt" translatable="false">I</string>
+    <string name="voltage_txt">U batt.</string>
+    <string name="t_fet_txt" translatable="false">T° FET</string>
+    <string name="time_txt">Time</string>
+    <string name="t_bat_txt">T° batt.</string>
+    <string name="capcity_txt">Capacity</string>
+    <string name="status_txt">Status</string>
+    <string name="disabled_txt">Disabled</string>
+    <string name="kmh_txt">km/h</string>
 </resources>
