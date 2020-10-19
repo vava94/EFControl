@@ -13,4 +13,8 @@
     <string name="status_txt">Status</string>
     <string name="disabled_txt">Disabled</string>
     <string name="kmh_txt">km/h</string>
+    <string name="action_connect_remote">Connect remote</string>
+    <string name="action_settings">Settings</string>
+    <string name="auto_connect_txt">Auto-connect</string>
+    <string name="no_remote_message">Remote is not set</string>
 </resources>

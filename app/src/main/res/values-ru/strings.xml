@@ -9,4 +9,8 @@
     <string name="status_txt">Статус</string>
     <string name="disabled_txt">Отключено</string>
     <string name="kmh_txt">км/ч</string>
+    <string name="action_connect_remote">Подключить пульт</string>
+    <string name="action_settings">Настройки</string>
+    <string name="auto_connect_txt">Автоподключение</string>
+    <string name="no_remote_message">Не выбран пульт</string>
 </resources>

@@ -3,6 +3,9 @@ package com.catanddev.ef_control
 import android.app.ActivityManager
 import android.content.*
 import android.content.pm.PackageManager
+import android.graphics.Color
+import android.graphics.ColorFilter
+import android.graphics.PorterDuffColorFilter
 import android.icu.math.BigDecimal
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -11,6 +14,8 @@ import android.location.LocationManager;
 import android.os.IBinder
 import android.os.PersistableBundle
 import android.util.Log
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.widget.*
 import androidx.core.app.ActivityCompat
@@ -33,6 +38,7 @@ class MainActivity : AppCompatActivity(),
     private var communicationService : CommunicationService? = null
     private var isGPSEnabled : Boolean = false
     private var kmhSpeed : Double = 0.0
+    private lateinit var mMenu: Menu
     private var sharedPrefs : SharedPreferences? = null
     private var speed : Double = 0.0
     private lateinit var spinner0 : Spinner
@@ -56,7 +62,18 @@ class MainActivity : AppCompatActivity(),
     private lateinit var  textView8 : TextView
     private lateinit var  textView9 : TextView
     private var viewBindings = Array( 11) { _ -> ArrayList<TextView>() }
-    
+
+    override fun onBTConnected(connected: Boolean) {
+        val mItem = mMenu.getItem(0)
+        mItem.isEnabled = true
+        mItem.icon.colorFilter = PorterDuffColorFilter(Color.WHITE, android.graphics.PorterDuff.Mode.MULTIPLY)
+        if(connected) {
+            mItem.icon = ContextCompat.getDrawable(this, R.drawable.ic_bluetooth_disable)
+        } else {
+            mItem.icon = ContextCompat.getDrawable(this, R.drawable.ic_bluetooth_connect)
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -99,7 +116,7 @@ class MainActivity : AppCompatActivity(),
         // Инициализация кнопок
         btFAB = findViewById(R.id.btFAB)
 
-        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, adapterStrings);
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, adapterStrings)
         spinner0.adapter = adapter
         spinner1.adapter = adapter
         spinner2.adapter = adapter
@@ -122,7 +139,7 @@ class MainActivity : AppCompatActivity(),
         spinner8.onItemSelectedListener = this
         spinner9.onItemSelectedListener = this
 
-        sharedPrefs = getPreferences(Context.MODE_PRIVATE) ?: return
+        sharedPrefs = getSharedPreferences("Settings", Context.MODE_PRIVATE) ?: return
         if(savedInstanceState == null) {
             sharedPrefs?.getInt("VIEW_0", 1)?.let { spinner0.setSelection(it) }
             sharedPrefs?.getInt("VIEW_1", 2)?.let { spinner1.setSelection(it) }
@@ -173,6 +190,12 @@ class MainActivity : AppCompatActivity(),
 
         val intent = Intent(this, CommunicationService::class.java)
         bindService(intent, this, BIND_AUTO_CREATE)
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.toolbar_menu, menu)
+        mMenu = menu!!
+        return super.onCreateOptionsMenu(menu)
     }
 
     override fun onGPSSpeed(speed: Double) {
@@ -278,16 +301,40 @@ class MainActivity : AppCompatActivity(),
                         break
                     }
                 }
-                with(sharedPrefs?.edit()) {
-
-                }
                 viewBindings[p2].add(mTV)
             }
         }
     }
 
-    override fun onNothingSelected(p0: AdapterView<*>?) {
-        TODO("Not yet implemented")
+    override fun onNothingSelected(p0: AdapterView<*>?) {}
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        val id = item.itemId
+        if(id == R.id.action_bt_connect) {
+            if (communicationService != null) {
+                if (communicationService!!.isConnected) {
+                    communicationService?.btDisconnect()
+                } else {
+                    val mAddress = sharedPrefs?.getString("DEFAULT_REMOTE", "").toString()
+                    if (mAddress.isEmpty()) {
+                        Toast.makeText(this, getString(R.string.no_remote_message), Toast.LENGTH_SHORT).show()
+                    } else {
+                        item.isEnabled = false
+                        item.icon.colorFilter = PorterDuffColorFilter(Color.GRAY, android.graphics.PorterDuff.Mode.MULTIPLY)
+                        communicationService?.btConnect(mAddress, sharedPrefs?.getString("DEFAULT_UUID", "").toString())
+                    }
+                }
+            }
+        }
+        else if(id == R.id.action_settings) {
+            val mAddress = sharedPrefs?.getString("DEFAULT_REMOTE", "").toString()
+            val intent = Intent(this, SettingsActivity::class.java).apply {
+                putExtra("DEFAULT_REMOTE", mAddress)
+            }
+            startActivity(intent)
+        }
+
+        return super.onOptionsItemSelected(item)
     }
 
     override fun onSaveInstanceState(outState: Bundle, outPersistentState: PersistableBundle) {
@@ -335,14 +382,25 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    private fun round(unrounded : Double, precision : Int, roundingMode : Int) : Double {
-        val bd = BigDecimal(unrounded)
-        val rounded = bd.setScale(precision, roundingMode)
-        return rounded.toDouble()
-    }
 
-    override fun onBTData(data: Array<Char>) {
-        //TODO("Not yet implemented")
+
+    override fun onBTData(data: ByteArray) {
+        for (i in 2 .. 10) {
+            val mVB = viewBindings[i]
+            for(mTV in mVB) {
+               when(i) {
+                   2 -> mTV.text = (data[1].toInt() * 100).toString()   //RPM
+                   3 -> mTV.text = (data[4].toInt().toString() + "%")   //PWM
+                   4 -> mTV.text = (data[2].toInt().toString() + " А")  //I
+                   5 -> mTV.text = (data[3].toInt().toString() + " V")  //U
+                   6 -> mTV.text = (data[5].toInt().toString() + " °C") //T Fet
+                   7 -> mTV.text = (data[7].toInt().toString() + " M")  //Time
+                   8 -> mTV.text = (data[6].toInt().toString() + " °C") //T batt
+                   9 -> mTV.text = (data[8].toInt().toString() + "Ah")  //Capacity
+                   10 -> mTV.text = data[9].toInt().toString()          //Status
+                }
+            }
+        }
     }
 
 }

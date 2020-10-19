@@ -19,7 +19,8 @@ interface GPSCallback {
     fun onGPSUpdate(location : Location)
 }
 
-/// TODO: Заменть на GNSS Measurement
+//TODO: Заменть на GNSS Measurement
+
 class GPSManager(var context: Context) : android.location.GpsStatus.Listener {
 
     private val gpsMinTime : Long = 500

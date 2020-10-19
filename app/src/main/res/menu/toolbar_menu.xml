@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/action_bt_connect"
+        android:icon="@drawable/ic_bluetooth_connect"
+        app:showAsAction="always"
+        android:title="@string/action_connect_remote" />
+    <item
+        android:id="@+id/action_settings"
+        android:icon="@drawable/ic_baseline_settings_24"
+        app:showAsAction="ifRoom"
+        android:title="@string/action_settings" />
+</menu>
