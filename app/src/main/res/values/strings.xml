@@ -17,4 +17,11 @@
     <string name="action_settings">Settings</string>
     <string name="auto_connect_txt">Auto-connect</string>
     <string name="no_remote_message">Remote is not set</string>
+    <string name="error_txt">Error</string>
+    <string name="gps_enable_message">GPS is not enabled. Do you want to go to the settings menu?</string>
+    <string name="cancel_txt">Cancel</string>
+    <string name="bt_enable_message">Bluetooth is not enabled. Do you want to go to the settings menu?</string>
+    <string name="satellites_txt">Satellites</string>
+    <string name="logs_folder_txt">Logs folder</string>
+    <string name="log_folder_error">Log folder not specified. Check settings.</string>
 </resources>

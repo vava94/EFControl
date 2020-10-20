@@ -1,19 +1,16 @@
 package com.catanddev.ef_control
 
-import android.app.ActivityManager
 import android.content.*
 import android.content.pm.PackageManager
 import android.graphics.Color
-import android.graphics.ColorFilter
 import android.graphics.PorterDuffColorFilter
-import android.icu.math.BigDecimal
+import android.graphics.drawable.Icon
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.location.Location;
-import android.location.LocationManager;
+import android.os.Environment
 import android.os.IBinder
 import android.os.PersistableBundle
-import android.util.Log
+import android.provider.MediaStore
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
@@ -21,10 +18,8 @@ import android.widget.*
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import kotlinx.android.synthetic.main.activity_main.*
 import java.lang.Exception
-import kotlin.math.round
-
-lateinit var gpsSpeedTextView : TextView
 
 class MainActivity : AppCompatActivity(),
 
@@ -33,14 +28,10 @@ class MainActivity : AppCompatActivity(),
     AdapterView.OnItemSelectedListener {
 
     private lateinit var adapterStrings : Array<String>
-    private lateinit var btFAB : FloatingActionButton
-    private var currentSpeed : Double = 0.0
     private var communicationService : CommunicationService? = null
-    private var isGPSEnabled : Boolean = false
-    private var kmhSpeed : Double = 0.0
+    private lateinit var fabREC : FloatingActionButton
     private lateinit var mMenu: Menu
     private var sharedPrefs : SharedPreferences? = null
-    private var speed : Double = 0.0
     private lateinit var spinner0 : Spinner
     private lateinit var spinner1 : Spinner
     private lateinit var spinner2 : Spinner
@@ -69,8 +60,10 @@ class MainActivity : AppCompatActivity(),
         mItem.icon.colorFilter = PorterDuffColorFilter(Color.WHITE, android.graphics.PorterDuff.Mode.MULTIPLY)
         if(connected) {
             mItem.icon = ContextCompat.getDrawable(this, R.drawable.ic_bluetooth_disable)
+            fabREC.show()
         } else {
             mItem.icon = ContextCompat.getDrawable(this, R.drawable.ic_bluetooth_connect)
+            fabREC.hide()
         }
     }
 
@@ -114,8 +107,21 @@ class MainActivity : AppCompatActivity(),
         textView8 = findViewById(R.id.textView8)
         textView9 = findViewById(R.id.textView9)
         // Инициализация кнопок
-        btFAB = findViewById(R.id.btFAB)
-
+        fabREC = findViewById(R.id.fabREC)
+        fabREC.setOnClickListener {
+            val mLogPath = sharedPrefs?.getString("LOG_PATH","").toString()
+            if (mLogPath.isEmpty()) {
+                Toast.makeText(this, getString(R.string.log_folder_error), Toast.LENGTH_LONG).show()
+            } else {
+                if (communicationService!!.isWriting) {
+                    communicationService?.stopWriting()
+                    fabREC.setImageIcon(Icon.createWithResource(this, R.drawable.ic_baseline_fiber_manual_record_24))
+                } else {
+                    communicationService?.startWriting(mLogPath)
+                    fabREC.setImageIcon(Icon.createWithResource(this, R.drawable.ic_baseline_stop_24))
+                }
+            }
+        }
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, adapterStrings)
         spinner0.adapter = adapter
         spinner1.adapter = adapter
@@ -176,18 +182,30 @@ class MainActivity : AppCompatActivity(),
         }
 
         try {
-            if (ContextCompat.checkSelfPermission(applicationContext,
-                    android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_DENIED) {
+            if (checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED ||
+                    checkSelfPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED ||
+                    checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_DENIED ||
+                    checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_DENIED ||
+                    checkSelfPermission(android.Manifest.permission.BLUETOOTH) == PackageManager.PERMISSION_DENIED ||
+                    checkSelfPermission(android.Manifest.permission.BLUETOOTH_ADMIN) == PackageManager.PERMISSION_DENIED
+
+            ) {
                 ActivityCompat.requestPermissions(
-                    this,
-                    arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION),
-                    228)
+                        this,
+                        arrayOf(android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                                android.Manifest.permission.READ_EXTERNAL_STORAGE,
+                                android.Manifest.permission.ACCESS_FINE_LOCATION,
+                                android.Manifest.permission.ACCESS_COARSE_LOCATION,
+                                android.Manifest.permission.BLUETOOTH,
+                                android.Manifest.permission.BLUETOOTH_ADMIN
+                        ),
+                        1)
             }
         } catch (e : Exception) {
             e.printStackTrace()
             Toast.makeText(this, e.toString(), Toast.LENGTH_LONG).show()
         }
-
+        //TODO: Сканирование сервисов на наличие запущенного
         val intent = Intent(this, CommunicationService::class.java)
         bindService(intent, this, BIND_AUTO_CREATE)
     }
@@ -198,8 +216,14 @@ class MainActivity : AppCompatActivity(),
         return super.onCreateOptionsMenu(menu)
     }
 
-    override fun onGPSSpeed(speed: Double) {
+    override fun onGPSSatellites(total: Int, inFix: Int) {
+        satellitesTextView.text = ("$inFix/$total")
+    }
 
+    override fun onGPSSpeed(speed: Double) {
+        for(mTV in viewBindings[1]) {
+            mTV.text = (speed.toString()+ " " + getString(R.string.kmh_txt))
+        }
     }
 
     override fun onItemSelected(adapterView: AdapterView<*>?, view : View?, p2: Int, p3: Long) {
@@ -330,6 +354,7 @@ class MainActivity : AppCompatActivity(),
             val mAddress = sharedPrefs?.getString("DEFAULT_REMOTE", "").toString()
             val intent = Intent(this, SettingsActivity::class.java).apply {
                 putExtra("DEFAULT_REMOTE", mAddress)
+                putExtra("LOG_PATH", sharedPrefs?.getString("LOG_PATH","").toString())
             }
             startActivity(intent)
         }
@@ -366,6 +391,7 @@ class MainActivity : AppCompatActivity(),
         communicationService?.setCallbacks(this)
         if(!communicationService?.isRunning!!) {
             val intent = Intent(this, CommunicationService::class.java)
+            communicationService?.context = this
             startService(intent)
         }
     }
@@ -375,11 +401,13 @@ class MainActivity : AppCompatActivity(),
     }
 
     override fun onStop() {
-        super.onStop()
+
         if(!communicationService?.isWriting!!) {
             val intent = Intent(this, CommunicationService::class.java)
+            communicationService?.context = this
             stopService(intent)
         }
+        super.onStop()
     }
 
 

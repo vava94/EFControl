@@ -13,4 +13,11 @@
     <string name="action_settings">Настройки</string>
     <string name="auto_connect_txt">Автоподключение</string>
     <string name="no_remote_message">Не выбран пульт</string>
+    <string name="error_txt">Ошибка</string>
+    <string name="gps_enable_message">GPS не включен. Перейти в настройки?</string>
+    <string name="cancel_txt">Отмена</string>
+    <string name="bt_enable_message">Bluetooth не включен. Перейти в настройки?</string>
+    <string name="satellites_txt">Спутники</string>
+    <string name="logs_folder_txt">Папка логов</string>
+    <string name="log_folder_error">Папка логов не указана. Проверьте настройки.</string>
 </resources>

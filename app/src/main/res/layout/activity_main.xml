@@ -362,52 +362,40 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/textView9" />
 
-        <Spinner
-            android:id="@+id/spinner10"
-            android:layout_width="0dp"
+        <TextView
+            android:id="@+id/textView11"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
-            android:layout_marginTop="4dp"
-            android:layout_marginEnd="16dp"
-            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="8dp"
+            android:text="@string/satellites_txt"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/textView10" />
+            app:layout_constraintTop_toBottomOf="@id/divider10" />
 
         <TextView
-            android:id="@+id/textView10"
+            android:id="@+id/satellitesTextView"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="8dp"
             android:layout_marginEnd="16dp"
-            android:text="@string/remote_txt"
+            android:text="0/0"
+            android:textAlignment="viewEnd"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/textView11"
             app:layout_constraintTop_toBottomOf="@+id/divider10" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/btFAB"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="end|bottom"
-            android:layout_margin="16dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:maxImageSize="32dp"
-            app:srcCompat="@drawable/ic_bluetooth_connect" />
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/btREC"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="end|bottom"
-            android:layout_margin="16dp"
-            android:visibility="gone"
-            app:layout_constraintBottom_toTopOf="@+id/btFAB"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:maxImageSize="32dp"
-            app:srcCompat="@drawable/ic_baseline_fiber_manual_record_24" />
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabREC"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end|bottom"
+        android:layout_margin="16dp"
+        android:contentDescription="TODO"
+        android:visibility="invisible"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:maxImageSize="32dp"
+        app:srcCompat="@drawable/ic_baseline_fiber_manual_record_24" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
