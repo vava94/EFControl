@@ -20,4 +20,5 @@
     <string name="satellites_txt">Спутники</string>
     <string name="logs_folder_txt">Папка логов</string>
     <string name="log_folder_error">Папка логов не указана. Проверьте настройки.</string>
+    <string name="permissions_error_txt">Не все разрешения предоставлены приложению.</string>
 </resources>

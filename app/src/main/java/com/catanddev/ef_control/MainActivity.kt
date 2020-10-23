@@ -7,10 +7,8 @@ import android.graphics.PorterDuffColorFilter
 import android.graphics.drawable.Icon
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.os.Environment
 import android.os.IBinder
 import android.os.PersistableBundle
-import android.provider.MediaStore
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
@@ -31,6 +29,7 @@ class MainActivity : AppCompatActivity(),
     private var communicationService : CommunicationService? = null
     private lateinit var fabREC : FloatingActionButton
     private lateinit var mMenu: Menu
+    private var permissionsGranted = false
     private var sharedPrefs : SharedPreferences? = null
     private lateinit var spinner0 : Spinner
     private lateinit var spinner1 : Spinner
@@ -182,10 +181,10 @@ class MainActivity : AppCompatActivity(),
         }
 
         try {
+
             if (checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED ||
                     checkSelfPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED ||
                     checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_DENIED ||
-                    checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_DENIED ||
                     checkSelfPermission(android.Manifest.permission.BLUETOOTH) == PackageManager.PERMISSION_DENIED ||
                     checkSelfPermission(android.Manifest.permission.BLUETOOTH_ADMIN) == PackageManager.PERMISSION_DENIED
 
@@ -195,19 +194,24 @@ class MainActivity : AppCompatActivity(),
                         arrayOf(android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
                                 android.Manifest.permission.READ_EXTERNAL_STORAGE,
                                 android.Manifest.permission.ACCESS_FINE_LOCATION,
-                                android.Manifest.permission.ACCESS_COARSE_LOCATION,
                                 android.Manifest.permission.BLUETOOTH,
                                 android.Manifest.permission.BLUETOOTH_ADMIN
                         ),
                         1)
+            } else {
+                permissionsGranted = true
+
             }
         } catch (e : Exception) {
             e.printStackTrace()
             Toast.makeText(this, e.toString(), Toast.LENGTH_LONG).show()
         }
-        //TODO: Сканирование сервисов на наличие запущенного
-        val intent = Intent(this, CommunicationService::class.java)
-        bindService(intent, this, BIND_AUTO_CREATE)
+
+        if (permissionsGranted) {
+            val intent = Intent(this, CommunicationService::class.java)
+            bindService(intent, this, BIND_AUTO_CREATE)
+        }
+
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -362,6 +366,22 @@ class MainActivity : AppCompatActivity(),
         return super.onOptionsItemSelected(item)
     }
 
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        permissionsGranted = true
+        for(result in grantResults) {
+            if(result == -1) {
+                permissionsGranted = false
+                Toast.makeText(this, getString(R.string.permissions_error_txt), Toast.LENGTH_LONG).show()
+                break
+            }
+        }
+        if(permissionsGranted) {
+            val intent = Intent(this, CommunicationService::class.java)
+            bindService(intent, this, BIND_AUTO_CREATE)
+        }
+    }
+
     override fun onSaveInstanceState(outState: Bundle, outPersistentState: PersistableBundle) {
         super.onSaveInstanceState(outState, outPersistentState)
         outState.putString("TV_0", textView0.text.toString())
@@ -388,10 +408,10 @@ class MainActivity : AppCompatActivity(),
 
     override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
         communicationService = (service as CommunicationService.CSBinder).getService()
-        communicationService?.setCallbacks(this)
-        if(!communicationService?.isRunning!!) {
+        communicationService!!.setCallbacks(this)
+        if(!communicationService!!.isRunning) {
             val intent = Intent(this, CommunicationService::class.java)
-            communicationService?.context = this
+            communicationService!!.context = this
             startService(intent)
         }
     }
