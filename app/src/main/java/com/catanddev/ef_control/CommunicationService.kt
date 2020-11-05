@@ -1,5 +1,6 @@
 package com.catanddev.ef_control
 
+import android.annotation.TargetApi
 import android.app.Activity
 import android.app.AlertDialog
 import android.app.Service
@@ -15,6 +16,7 @@ import android.os.*
 import android.provider.CallLog
 import android.provider.Settings
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.documentfile.provider.DocumentFile
 import java.io.IOException
@@ -39,7 +41,7 @@ class CommunicationService : Service(), LocationListener {
     private var bluetoothAdapter: BluetoothAdapter? = null
     private lateinit var btSocket : BluetoothSocket
     private var communicationCallbacks: CommunicationCallbacks? = null
-    private lateinit var gnssStatusCallback: GnssStatus.Callback
+    private var gnssStatusCallback: GnssStatus.Callback
     lateinit var context : Context
     var isConnected = false
         private set
@@ -48,10 +50,12 @@ class CommunicationService : Service(), LocationListener {
     var isWriting = false
         private set
     private var kmhSpeed = 0.0
-    private var locationManager : LocationManager? = null
+    private lateinit var locationManager : LocationManager
     private val mBinder: IBinder = CSBinder()
     private var outputStream : OutputStream ? = null
-    private val uuid = java.util.UUID.fromString("00001101-0000-1000-8000-00805f9b34fb")
+    private val uuid = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb")
+
+    private var testArray = byteArrayOf(0xfc.toByte(), 10.toByte(), 11.toByte(), 12.toByte(), 13.toByte(), 14.toByte(), 15.toByte(), 16.toByte(), 18.toByte(), 0xfe.toByte())
 
     inner class CSBinder : Binder() {
         fun getService() : CommunicationService? {
@@ -79,11 +83,11 @@ class CommunicationService : Service(), LocationListener {
                     }
                     mSatellites ++
                 }
-                Handler(Looper.getMainLooper()).post {
-                    communicationCallbacks?.onGPSSatellites(mSatellites, mSatellitesInFix)
-                }
+                communicationCallbacks?.onGPSSatellites(mSatellites, mSatellitesInFix)
             }
+
         }
+
     }
 
     fun btConnect(address: String, uuid: String) {
@@ -124,13 +128,13 @@ class CommunicationService : Service(), LocationListener {
                 val mWorker1 = Executors.newSingleThreadExecutor()
                 val mRunnable1 = Runnable {
                     val mInStream = btSocket.inputStream
-                    val mData = ByteArray(100)
-                    val sdf = SimpleDateFormat("HH:mm:ss")
+                    val mData = ByteArray(20)
+                    val sdf = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
                     var currentDate : String
                     while (btSocket.isConnected) {
                         if (mInStream.available() >= 11) {
                             mInStream.read(mData)
-                            if (mData[0].toInt() == 0xFC && mData[10].toInt() == 0xFE) {
+                            if (mData[0] == 0xFC.toByte() && mData[10] == 0xFE.toByte()) {
                                 communicationCallbacks?.onBTData(mData)
                                 if (isWriting) {
                                     currentDate = sdf.format(Date())
@@ -138,7 +142,7 @@ class CommunicationService : Service(), LocationListener {
                                     outputStream!!.write(' '.toInt())
                                     outputStream!!.write(kmhSpeed.toString().toByteArray())
                                     outputStream!!.write(' '.toInt())
-                                    outputStream!!.write(mData)
+                                    outputStream!!.write(mData, 0, 11)
                                     outputStream!!.flush()
                                 }
                             }
@@ -147,9 +151,7 @@ class CommunicationService : Service(), LocationListener {
                 }
                 mWorker1.execute(mRunnable1)
             }
-            Handler(Looper.getMainLooper()).post {
-                communicationCallbacks?.onBTConnected(isConnected)
-            }
+            communicationCallbacks?.onBTConnected(isConnected)
         }
         mWorker.execute(mRunnable)
     }
@@ -170,11 +172,20 @@ class CommunicationService : Service(), LocationListener {
     }
 
     override fun onLocationChanged(location: Location) {
-        val mCurrentSpeed = round(location.speed.toDouble(), 3, BigDecimal.ROUND_HALF_UP)
-        kmhSpeed = round(mCurrentSpeed * 3.6, 3, BigDecimal.ROUND_HALF_UP)
-        Handler(Looper.getMainLooper()).post {
-            communicationCallbacks?.onGPSSpeed(kmhSpeed)
-        }
+        val mCurrentSpeed = round(location.speed.toDouble())
+        kmhSpeed = round(mCurrentSpeed * 3.6)
+        communicationCallbacks?.onGPSSpeed(kmhSpeed)
+        // Emulator display data test
+        /*communicationCallbacks?.onBTData(testArray)
+        testArray[1] ++
+        testArray[2] ++
+        testArray[3] ++
+        testArray[4] ++
+        testArray[5] ++
+        testArray[6] ++
+        testArray[7] ++
+        testArray[8] ++
+        testArray[9] ++*/
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -184,13 +195,11 @@ class CommunicationService : Service(), LocationListener {
             showBluetoothAlert()
         }
         locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
-        if(locationManager != null && !(locationManager!!.isProviderEnabled(LocationManager.GPS_PROVIDER))) {
+        if(!(locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER))) {
             showGPSAlert()
         }
 
-        if (locationManager == null) {
-           locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-        }
+       locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
 
         val mCriteria = Criteria()
         mCriteria.accuracy = Criteria.ACCURACY_FINE
@@ -211,25 +220,33 @@ class CommunicationService : Service(), LocationListener {
                     1)
         }
         if (mBestProvider != null && mBestProvider.isNotEmpty()) {
-            locationManager?.requestLocationUpdates(mBestProvider, 100, 0.0f, this)
+            locationManager.requestLocationUpdates(mBestProvider, 100, 0.0f, this)
         } else {
-            val mProviders = locationManager?.getProviders(true)
-            if (mProviders != null) {
-                for(mProvider in mProviders) {
-                    locationManager?.requestLocationUpdates(mProvider, 100, 0.0f, this)
-                }
+            val mProviders = locationManager.getProviders(true)
+            for(mProvider in mProviders) {
+                locationManager.requestLocationUpdates(mProvider, 100, 0.0f, this)
             }
         }
-        if (locationManager != null) {
-            locationManager!!.registerGnssStatusCallback(gnssStatusCallback, Handler())
-        }
+        locationManager.registerGnssStatusCallback(gnssStatusCallback, Handler(mainLooper))
         isRunning = true
         return START_STICKY
     }
 
-    private fun round(unrounded: Double, precision: Int, roundingMode: Int) : Double {
+    @TargetApi(Build.VERSION_CODES.N)
+    override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {
+
+    }
+
+
+    override fun onDestroy() {
+        super.onDestroy()
+        locationManager.unregisterGnssStatusCallback(gnssStatusCallback)
+
+    }
+
+    private fun round(unrounded: Double) : Double {
         val bd = BigDecimal(unrounded)
-        val rounded = bd.setScale(precision, roundingMode)
+        val rounded = bd.setScale(3, 3)
         return rounded.toDouble()
     }
 
@@ -270,7 +287,7 @@ class CommunicationService : Service(), LocationListener {
     }
 
     fun startWriting(logPath: String) {
-        val sdf = SimpleDateFormat("dd.M.yyyy_HH-mm-ss")
+        val sdf = SimpleDateFormat("dd.M.yyyy_HH-mm-ss", Locale.getDefault())
         val currentDate = sdf.format(Date())
         val mDir = DocumentFile.fromTreeUri(context, Uri.parse(logPath))
 

@@ -5,10 +5,8 @@ import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.PorterDuffColorFilter
 import android.graphics.drawable.Icon
+import android.os.*
 import androidx.appcompat.app.AppCompatActivity
-import android.os.Bundle
-import android.os.IBinder
-import android.os.PersistableBundle
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
@@ -54,15 +52,17 @@ class MainActivity : AppCompatActivity(),
     private var viewBindings = Array( 11) { _ -> ArrayList<TextView>() }
 
     override fun onBTConnected(connected: Boolean) {
-        val mItem = mMenu.getItem(0)
-        mItem.isEnabled = true
-        mItem.icon.colorFilter = PorterDuffColorFilter(Color.WHITE, android.graphics.PorterDuff.Mode.MULTIPLY)
-        if(connected) {
-            mItem.icon = ContextCompat.getDrawable(this, R.drawable.ic_bluetooth_disable)
-            fabREC.show()
-        } else {
-            mItem.icon = ContextCompat.getDrawable(this, R.drawable.ic_bluetooth_connect)
-            fabREC.hide()
+        Handler(mainLooper).post() {
+            val mItem = mMenu.getItem(0)
+            mItem.isEnabled = true
+            mItem.icon.colorFilter = PorterDuffColorFilter(Color.WHITE, android.graphics.PorterDuff.Mode.MULTIPLY)
+            if (connected) {
+                mItem.icon = ContextCompat.getDrawable(this, R.drawable.ic_bluetooth_disable)
+                fabREC.show()
+            } else {
+                mItem.icon = ContextCompat.getDrawable(this, R.drawable.ic_bluetooth_connect)
+                fabREC.hide()
+            }
         }
     }
 
@@ -221,12 +221,16 @@ class MainActivity : AppCompatActivity(),
     }
 
     override fun onGPSSatellites(total: Int, inFix: Int) {
-        satellitesTextView.text = ("$inFix/$total")
+        Handler(mainLooper).post {
+            satellitesTextView.text = ("$inFix/$total")
+        }
     }
 
     override fun onGPSSpeed(speed: Double) {
-        for(mTV in viewBindings[1]) {
-            mTV.text = (speed.toString()+ " " + getString(R.string.kmh_txt))
+        Handler(mainLooper).post {
+            for (mTV in viewBindings[1]) {
+                mTV.text = (speed.toString() + " " + getString(R.string.kmh_txt))
+            }
         }
     }
 
@@ -433,22 +437,23 @@ class MainActivity : AppCompatActivity(),
 
 
     override fun onBTData(data: ByteArray) {
-        for (i in 2 .. 10) {
-            val mVB = viewBindings[i]
-            for(mTV in mVB) {
-               when(i) {
-                   2 -> mTV.text = (data[1].toInt() * 100).toString()   //RPM
-                   3 -> mTV.text = (data[4].toInt().toString() + "%")   //PWM
-                   4 -> mTV.text = (data[2].toInt().toString() + " А")  //I
-                   5 -> mTV.text = (data[3].toInt().toString() + " V")  //U
-                   6 -> mTV.text = (data[5].toInt().toString() + " °C") //T Fet
-                   7 -> mTV.text = (data[7].toInt().toString() + " M")  //Time
-                   8 -> mTV.text = (data[6].toInt().toString() + " °C") //T batt
-                   9 -> mTV.text = (data[8].toInt().toString() + "Ah")  //Capacity
-                   10 -> mTV.text = data[9].toInt().toString()          //Status
+        Handler(Looper.getMainLooper()).post {
+            for (i in 2..10) {
+                val mVB = viewBindings[i]
+                for (mTV in mVB) {
+                    when (i) {
+                        2 -> mTV.text = (data[1].toInt() * 100).toString()   //RPM
+                        3 -> mTV.text = (data[4].toInt().toString() + "%")   //PWM
+                        4 -> mTV.text = (data[2].toInt().toString() + " А")  //I
+                        5 -> mTV.text = (data[3].toInt().toString() + " V")  //U
+                        6 -> mTV.text = (data[5].toInt().toString() + " °C") //T Fet
+                        7 -> mTV.text = (data[7].toInt().toString() + " M")  //Time
+                        8 -> mTV.text = (data[6].toInt().toString() + " °C") //T batt
+                        9 -> mTV.text = (data[8].toInt().toString() + "Ah")  //Capacity
+                        10 -> mTV.text = data[9].toInt().toString()          //Status
+                    }
                 }
             }
         }
     }
-
 }
