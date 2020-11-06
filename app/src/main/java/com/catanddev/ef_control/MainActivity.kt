@@ -62,6 +62,17 @@ class MainActivity : AppCompatActivity(),
             } else {
                 mItem.icon = ContextCompat.getDrawable(this, R.drawable.ic_bluetooth_connect)
                 fabREC.hide()
+                Handler(Looper.getMainLooper()).post {
+                    textView1.text = ""
+                    textView2.text = ""
+                    textView3.text = ""
+                    textView4.text = ""
+                    textView5.text = ""
+                    textView6.text = ""
+                    textView7.text = ""
+                    textView8.text = ""
+                    textView9.text = ""
+                }
             }
         }
     }
@@ -440,16 +451,18 @@ class MainActivity : AppCompatActivity(),
         Handler(Looper.getMainLooper()).post {
             for (i in 2..10) {
                 val mVB = viewBindings[i]
+                var mV = ((data[3].toInt() + 400) * 0.1).toString()
+                if(mV.length > 4) mV = mV.substring(0..3)
                 for (mTV in mVB) {
                     when (i) {
                         2 -> mTV.text = (data[1].toInt() * 100).toString()   //RPM
-                        3 -> mTV.text = (data[4].toInt().toString() + "%")   //PWM
-                        4 -> mTV.text = (data[2].toInt().toString() + " А")  //I
-                        5 -> mTV.text = (data[3].toInt().toString() + " V")  //U
-                        6 -> mTV.text = (data[5].toInt().toString() + " °C") //T Fet
-                        7 -> mTV.text = (data[7].toInt().toString() + " M")  //Time
-                        8 -> mTV.text = (data[6].toInt().toString() + " °C") //T batt
-                        9 -> mTV.text = (data[8].toInt().toString() + "Ah")  //Capacity
+                        3 -> mTV.text = (data[4].toString() + "%")   //PWM
+                        4 -> mTV.text = (data[2].toString() + " А")  //I
+                        5 -> mTV.text = (mV + " V")  //U
+                        6 -> mTV.text = (data[5].toString() + " °C") //T Fet
+                        7 -> mTV.text = (data[7].toString() + " M")  //Time
+                        8 -> mTV.text = (data[6].toString() + " °C") //T batt
+                        9 -> mTV.text = (data[8].toString() + "Ah")  //Capacity
                         10 -> mTV.text = data[9].toInt().toString()          //Status
                     }
                 }
